@@ -2,6 +2,7 @@
 #define RB_H
 #include <iostream>
 #include <fstream>
+#include </home/izabel/repositorios/ufape/cJSON/cJSON.h>
 
 enum Cor
 {
@@ -31,7 +32,19 @@ Individuo *lerDados();
 void tirarEnter(char *string);
 void adicionar(Individuo *individuo, Arvore *raiz);
 
+void ajustar(Arvore *raiz, Arvore elemento);
+
+void rotacaoSimplesDir(Arvore *raiz, Arvore pivo);
+void rotacaoSimplesEsq(Arvore *raiz, Arvore pivo);
+
+int isElementoRaiz(Arvore elemento);
+enum Cor cor(Arvore elemento);
+Arvore tio(Arvore elemento);
+Arvore irmao(Arvore elemento);
+int isFilhoEsquerdo(Arvore elemento);
+int isFilhoDireito(Arvore elemento);
+
 void salvarArquivo(char *arquivo, Arvore individuo);
-void salvarAux(Arvore raiz, FILE *arq);
+void salvarAux(Arvore raiz, cJSON *root);
 
 #endif
