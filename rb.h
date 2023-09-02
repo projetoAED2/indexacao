@@ -2,7 +2,7 @@
 #define RB_H
 #include <iostream>
 #include <fstream>
-#include </home/izabel/repositorios/ufape/cJSON/cJSON.h>
+#include "../cJSON/cJSON.h"
 
 enum Cor
 {
