@@ -43,7 +43,7 @@ void tirarEnter(char *string)
     string[strlen(string) - 1] = '\0';
 }
 
-void adicionar(Individuo *individuo, Arvore *raiz)
+void adicionar(Individuo *individuo, Arvore *raiz, int cod)
 {
     Arvore posicao, pai, novo;
     posicao = *raiz;
@@ -52,7 +52,8 @@ void adicionar(Individuo *individuo, Arvore *raiz)
     while (posicao != NULL)
     {
         pai = posicao;
-        if (individuo->codigo > posicao->individuo->codigo)
+        // se individuo->var > posicao->individuo->var
+        if (maiorVariavel(individuo, posicao, cod))
             posicao = posicao->dir;
         else
             posicao = posicao->esq;
@@ -68,13 +69,29 @@ void adicionar(Individuo *individuo, Arvore *raiz)
         *raiz = novo;
     else
     {
-        if (individuo->codigo > pai->individuo->codigo)
+        // se individuo->var > pai->individuo->var
+        if (maiorVariavel(individuo, pai, cod))
             pai->dir = novo;
         else
             pai->esq = novo;
     }
 
     ajustar(raiz, novo);
+}
+
+int maiorVariavel(Individuo *individuo, Arvore arvore, int cod)
+{
+    if (cod)
+        return (individuo->codigo > arvore->individuo->codigo);
+
+    int c = strcmp(individuo->nome, arvore->individuo->nome);
+    if (c > 0)
+    {
+        // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 1);
+        return 1;
+    }
+    // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 0);
+    return 0;
 }
 
 void ajustar(Arvore *raiz, Arvore elemento)

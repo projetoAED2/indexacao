@@ -20,3 +20,17 @@ g++ *.cpp -o programa -L ../cJSON/build -lcjson
 ```
 ./programa
 ```
+
+# Executar testes
+
+Indexação de código:
+```
+./programa < teste-index-codigo.in
+diff index-codigo.json teste-index-codigo-out.json
+```
+
+Indexação de nome:
+```
+./programa < teste-index-nome.in 
+diff index-nome.json teste-index-nome-out.json
+```

@@ -30,7 +30,7 @@ void inicializar(Arvore *raiz);
 
 Individuo *lerDados();
 void tirarEnter(char *string);
-void adicionar(Individuo *individuo, Arvore *raiz);
+void adicionar(Individuo *individuo, Arvore *raiz, int cod);
 
 void ajustar(Arvore *raiz, Arvore elemento);
 
@@ -51,5 +51,7 @@ void removerRb(int valor, Arvore *raiz);
 void reajustar(Arvore *raiz, Arvore elemento);
 void retirarDuploPreto(Arvore *raiz, Arvore elemento);
 Arvore maiorElemento(Arvore raiz);
+
+int maiorVariavel(Individuo *individuo, Arvore arvore, int cod);
 
 #endif
