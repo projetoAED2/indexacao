@@ -1,22 +1,34 @@
-# Instalar o g++
+# Indexação de individuos
+
+Estrutura de um indivíduo:
+```
+{
+    "codigo": 123,
+    "nome": "Nome do individuo variavel"
+}
+```
+
+Utilizamos a bibliotesca cJSON:
+https://github.com/DaveGamble/cJSON.git
+
+# Para rodar o projeto
+
+Instalar o g++
 ```
 sudo apt-get install g++
 ```
 
-# Utilizamos a bibliotesca cJSON
-https://github.com/DaveGamble/cJSON.git
-
-# Dentro da raiz desse projeto
+Na raiz do projeto:
 ```
 export LD_LIBRARY_PATH=../cJSON/build:$LD_LIBRARY_PATH
 ```
 
-# Comando para compilar: 
+Comando para compilar: 
 ```
 g++ *.cpp -o programa -L ../cJSON/build -lcjson
 ```
 
-# Comando para executar:
+Comando para executar:
 ```
 ./programa
 ```
