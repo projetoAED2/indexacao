@@ -5,7 +5,7 @@
 int main()
 {
     Arvore a;
-    int opcao;
+    int opcao, codigo;
     char nomeArquivo[] = "dados.json";
     inicializar(&a);
 
@@ -20,6 +20,10 @@ int main()
             break;
         case 2:
             salvarArquivo(nomeArquivo, a);
+            break;
+        case 3:
+            scanf("%d\n", &codigo);
+            removerRb(codigo, &a);
             break;
         case 99:
             exit(0);

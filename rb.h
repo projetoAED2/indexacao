@@ -47,4 +47,9 @@ int isFilhoDireito(Arvore elemento);
 void salvarArquivo(char *arquivo, Arvore individuo);
 void salvarAux(Arvore raiz, cJSON *root);
 
+void removerRb(int valor, Arvore *raiz);
+void reajustar(Arvore *raiz, Arvore elemento);
+void retirarDuploPreto(Arvore *raiz, Arvore elemento);
+Arvore maiorElemento(Arvore raiz);
+
 #endif
