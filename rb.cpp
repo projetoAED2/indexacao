@@ -8,12 +8,43 @@
 
 Arvore noNull;
 
+int inicializarTabela(Tabela *tab)
+{
+    inicializar(&tab->indices);
+    tab->arquivoDados = fopen("dados.json", "a+b");
+    char nomeArq[] = "indices.dat";
+    tab->indices = carregarArquivo(nomeArq, tab->indices);
+    if (tab->arquivoDados != NULL)
+        return 1;
+    else
+        return 0;
+}
+
+Arvore carregarArquivo(char *nome, Arvore a)
+{
+    FILE *arq;
+    arq = fopen(nome, "rb");
+    Indice *temp;
+    if (arq != NULL)
+    {
+        temp = (Indice *)malloc(sizeof(Indice));
+        while (fread(temp, sizeof(Indice), 1, arq))
+        {
+            printf("reading\n");
+            adicionar(temp, &a, 1);
+            temp = (Indice *)malloc(sizeof(Indice));
+        }
+        fclose(arq);
+    }
+    return a;
+}
+
 void inicializar(Arvore *raiz)
 {
     *raiz = NULL;
     noNull = (Arvore)malloc(sizeof(struct no));
     noNull->cor = DUPLO_PRETO;
-    noNull->individuo = 0;
+    noNull->indice = NULL;
     noNull->esq = NULL;
     noNull->dir = NULL;
 }
@@ -43,7 +74,57 @@ void tirarEnter(char *string)
     string[strlen(string) - 1] = '\0';
 }
 
-void adicionar(Individuo *individuo, Arvore *raiz, int cod)
+void adicionarIndividuo(Tabela *tab, Individuo *individuo)
+{
+    if (tab->arquivoDados != NULL)
+    {
+        Indice *novo = (Indice *)malloc(sizeof(Indice));
+        novo->codigo = individuo->codigo;
+        cJSON *listaJson = NULL;
+        char *jsonString = NULL;
+
+        fseek(tab->arquivoDados, 0L, SEEK_END);
+        novo->indice = ftell(tab->arquivoDados);
+
+        fseek(tab->arquivoDados, 0L, SEEK_END);
+        // Verifique se o arquivo está vazio
+        if (ftell(tab->arquivoDados) == 0)
+        {
+            // O arquivo está vazio, crie uma nova lista JSON
+            listaJson = cJSON_CreateArray();
+        }
+        else
+        {
+            fseek(tab->arquivoDados, 0L, SEEK_SET);
+            char buffer[4096];
+            size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
+            buffer[bytesRead] = '\0';
+
+            listaJson = cJSON_Parse(buffer);
+        }
+
+        fclose(tab->arquivoDados);
+        tab->arquivoDados = fopen("dados.json", "w");
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddNumberToObject(json, "codigo", individuo->codigo);
+        cJSON_AddStringToObject(json, "nome", individuo->nome);
+        cJSON_AddItemToArray(listaJson, json);
+        jsonString = cJSON_Print(listaJson);
+
+        fprintf(tab->arquivoDados, "%s", jsonString);
+        fflush(tab->arquivoDados);
+
+        free(jsonString);
+        cJSON_Delete(listaJson);
+
+        fclose(tab->arquivoDados);
+        tab->arquivoDados = fopen("dados.json", "a+b");
+
+        adicionar(novo, &(tab->indices), 1);
+    }
+}
+
+void adicionar(Indice *individuo, Arvore *raiz, int cod)
 {
     Arvore posicao, pai, novo;
     posicao = *raiz;
@@ -59,7 +140,7 @@ void adicionar(Individuo *individuo, Arvore *raiz, int cod)
             posicao = posicao->esq;
     }
     novo = (Arvore)malloc(sizeof(struct no));
-    novo->individuo = individuo;
+    novo->indice = individuo;
     novo->esq = NULL;
     novo->dir = NULL;
     novo->pai = pai;
@@ -79,18 +160,18 @@ void adicionar(Individuo *individuo, Arvore *raiz, int cod)
     ajustar(raiz, novo);
 }
 
-int maiorVariavel(Individuo *individuo, Arvore arvore, int cod)
+int maiorVariavel(Indice *individuo, Arvore arvore, int cod)
 {
     if (cod)
-        return (individuo->codigo > arvore->individuo->codigo);
+        return (individuo->codigo > arvore->indice->codigo);
 
-    int c = strcmp(individuo->nome, arvore->individuo->nome);
-    if (c > 0)
-    {
-        // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 1);
-        return 1;
-    }
-    // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 0);
+    // int c = strcmp(individuo->nome, arvore->individuo->nome);
+    // if (c > 0)
+    // {
+    //     // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 1);
+    //     return 1;
+    // }
+    // // printf("c: %d -> %s > %s = %d \n", c, individuo->nome, arvore->individuo->nome, 0);
     return 0;
 }
 
@@ -273,9 +354,9 @@ void salvarAux(Arvore raiz, cJSON *root)
     if (raiz != NULL)
     {
         cJSON *node = cJSON_CreateObject(); // Criar um novo objeto JSON para cada nó
-        Individuo *individuo = raiz->individuo;
-        cJSON_AddItemToObject(node, "codigo", cJSON_CreateNumber(individuo->codigo));
-        cJSON_AddItemToObject(node, "nome", cJSON_CreateString(individuo->nome));
+        Indice *indice = raiz->indice;
+        cJSON_AddItemToObject(node, "codigo", cJSON_CreateNumber(indice->codigo));
+        cJSON_AddItemToObject(node, "indice", cJSON_CreateNumber(indice->indice));
 
         cJSON_AddItemToArray(root, node); // Adicionar o objeto node ao array root
 
@@ -291,7 +372,7 @@ void removerRb(int valor, Arvore *raiz)
 
     while (posicao != NULL)
     {
-        if (valor == posicao->individuo->codigo)
+        if (valor == posicao->indice->codigo)
         {
             // 0 filho
             if (posicao->esq == NULL && posicao->dir == NULL)
@@ -366,12 +447,12 @@ void removerRb(int valor, Arvore *raiz)
                 break;
             }
             // caso 2 filhos
-            int maiorValorEsq = maiorElemento(posicao->esq)->individuo->codigo;
-            posicao->individuo->codigo = maiorValorEsq;
-            removerRb(posicao->individuo->codigo, &(posicao->esq));
+            int maiorValorEsq = maiorElemento(posicao->esq)->indice->codigo;
+            posicao->indice->codigo = maiorValorEsq;
+            removerRb(posicao->indice->codigo, &(posicao->esq));
             break;
         }
-        if (valor > posicao->individuo->codigo)
+        if (valor > posicao->indice->codigo)
             posicao = posicao->dir;
         else
             posicao = posicao->esq;
@@ -481,4 +562,79 @@ Arvore maiorElemento(Arvore raiz)
         return raiz;
     else
         return maiorElemento(raiz->dir);
+}
+
+void preOrder(Arvore raiz, Tabela *tab)
+{
+    if (raiz != NULL)
+    {
+        imprimirElemento(raiz, tab);
+        preOrder(raiz->esq, tab);
+        preOrder(raiz->dir, tab);
+    }
+}
+
+// void imprimirElemento(Arvore raiz, Tabela * tab) {
+// 	Individuo * temp = (Individuo *) malloc (sizeof(Individuo));
+//     temp->codigo = 1000;
+//     printf("indice: %d\n", raiz->indice->indice);
+
+//    	fseek(tab->arquivoDados, raiz->indice->indice, SEEK_SET);
+// 	//
+// 	//int r = fread(temp, sizeof(Individuo), 1, tab->arquivoDados);
+//     fseek(tab->arquivoDados, 0L, SEEK_SET);
+//     char buffer[4096];
+//     size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
+//     buffer[bytesRead] = '\0';
+
+//     cJSON *listaJson = NULL;
+//     listaJson = cJSON_Parse(buffer);
+
+//     char *nome = ?;
+// 	printf("[%d, %s]\n", raiz->indice->codigo, nome);
+// 	free(temp);
+// }
+
+void imprimirElemento(Arvore raiz, Tabela *tab)
+{
+    Individuo *temp = (Individuo *)malloc(sizeof(Individuo));
+    temp->codigo = 1000;
+    printf("indice: %d\n", raiz->indice->indice);
+
+    fseek(tab->arquivoDados, raiz->indice->indice, SEEK_SET);
+
+    fseek(tab->arquivoDados, 0L, SEEK_SET);
+    char buffer[4096];
+    size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
+    buffer[bytesRead] = '\0';
+
+    cJSON *listaJson = NULL;
+    listaJson = cJSON_Parse(buffer);
+
+    // Verifique se o parsing foi bem-sucedido
+    if (listaJson)
+    {
+        // Verifique se a lista é um array JSON
+        if (cJSON_IsArray(listaJson))
+        {
+            int arraySize = cJSON_GetArraySize(listaJson);
+            for (int i = 0; i < arraySize; i++)
+            {
+                cJSON *element = cJSON_GetArrayItem(listaJson, i);
+                if (element)
+                {
+                    cJSON *nomeJson = cJSON_GetObjectItem(element, "nome");
+                    if (cJSON_IsString(nomeJson))
+                    {
+                        char *nome = nomeJson->valuestring;
+                        printf("[%d, %s]\n", raiz->indice->codigo, nome);
+                        continue;
+                    }
+                }
+            }
+        }
+        cJSON_Delete(listaJson);
+    }
+
+    free(temp);
 }
