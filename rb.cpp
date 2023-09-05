@@ -12,7 +12,7 @@ int inicializarTabela(Tabela *tab)
 {
     inicializar(&tab->indices);
     tab->arquivoDados = fopen("dados.json", "a+b");
-    char nomeArq[] = "indices.dat";
+    char nomeArq[] = "index-codigo.json";
     tab->indices = carregarArquivo(nomeArq, tab->indices);
     if (tab->arquivoDados != NULL)
         return 1;
@@ -27,13 +27,61 @@ Arvore carregarArquivo(char *nome, Arvore a)
     Indice *temp;
     if (arq != NULL)
     {
-        temp = (Indice *)malloc(sizeof(Indice));
-        while (fread(temp, sizeof(Indice), 1, arq))
+        fseek(arq, 0L, SEEK_END);
+        long tamanho = ftell(arq);
+        fseek(arq, 0L, SEEK_SET);
+
+        char *jsonString = (char *)malloc(tamanho + 1);
+        if (!jsonString)
         {
-            printf("reading\n");
-            adicionar(temp, &a, 1);
-            temp = (Indice *)malloc(sizeof(Indice));
+            printf("Erro ao alocar memória para a string JSON.\n");
+            fclose(arq);
+            exit(-1);
         }
+
+        size_t bytesRead = fread(jsonString, 1, tamanho, arq);
+        jsonString[bytesRead] = '\0';
+
+        cJSON *listaJson = cJSON_Parse(jsonString);
+        free(jsonString);
+
+        if (!listaJson || !cJSON_IsArray(listaJson))
+        {
+            printf("Erro ao analisar o JSON.\n");
+            cJSON_Delete(listaJson);
+            exit(-1);
+        }
+
+        int numIndices = cJSON_GetArraySize(listaJson);
+        Indice *indices = (Indice *)malloc(numIndices * sizeof(Indice));
+
+        for (int i = 0; i < numIndices; i++)
+        {
+            cJSON *indiceJson = cJSON_GetArrayItem(listaJson, i);
+            cJSON *codigoJson = cJSON_GetObjectItem(indiceJson, "codigo");
+            cJSON *indiceValueJson = cJSON_GetObjectItem(indiceJson, "indice");
+
+            if (cJSON_IsNumber(codigoJson) && cJSON_IsNumber(indiceValueJson))
+            {
+                indices[i].codigo = codigoJson->valueint;
+                indices[i].indice = indiceValueJson->valueint;
+            }
+            else
+            {
+                printf("Erro ao ler os dados do índice %d.\n", i);
+            }
+        }
+
+        cJSON_Delete(listaJson);
+
+        for (int i = 0; i < numIndices; i++)
+        {
+            temp = (Indice *)malloc(sizeof(Indice));
+            temp->codigo = indices[i].codigo;
+            temp->indice = indices[i].indice;
+            adicionar(temp, &a, 1);
+        }
+
         fclose(arq);
     }
     return a;
@@ -365,100 +413,6 @@ void salvarAux(Arvore raiz, cJSON *root)
     }
 }
 
-void removerRb(int valor, Arvore *raiz)
-{
-    Arvore posicao;
-    posicao = *raiz;
-
-    while (posicao != NULL)
-    {
-        if (valor == posicao->indice->codigo)
-        {
-            // 0 filho
-            if (posicao->esq == NULL && posicao->dir == NULL)
-            {
-                // raiz 0 filho
-                if (isElementoRaiz(posicao))
-                {
-                    *raiz = NULL;
-                    free(posicao);
-                    break;
-                }
-                // vermelho 0 filho
-                if (posicao->cor == VERMELHO)
-                {
-                    if (isFilhoEsquerdo(posicao))
-                        posicao->pai->esq = NULL;
-                    else
-                        posicao->pai->dir = NULL;
-                    free(posicao);
-                    break;
-                }
-                // preto 0 filho
-                else
-                {
-                    noNull->cor = DUPLO_PRETO;
-                    noNull->pai = posicao->pai;
-                    if (isFilhoEsquerdo(posicao))
-                        posicao->pai->esq = noNull;
-                    else
-                        posicao->pai->dir = noNull;
-                    free(posicao);
-
-                    reajustar(raiz, noNull);
-                    break;
-                }
-                break;
-            }
-            // 1 filho esq
-            if (posicao->esq != NULL && posicao->dir == NULL)
-            {
-                posicao->esq->cor = PRETO;
-                posicao->esq->pai = posicao->pai;
-
-                if (isElementoRaiz(posicao))
-                    *raiz = posicao->esq;
-                else
-                {
-                    if (isFilhoDireito(posicao))
-                        posicao->pai->dir = posicao->esq;
-                    else
-                        posicao->pai->esq = posicao->esq;
-                }
-                free(posicao);
-                break;
-            }
-            // 1 filho dir
-            if (posicao->dir != NULL && posicao->esq == NULL)
-            {
-                posicao->dir->cor = PRETO;
-                posicao->dir->pai = posicao->pai;
-
-                if (isElementoRaiz(posicao))
-                    *raiz = posicao->dir;
-                else
-                {
-                    if (isFilhoEsquerdo(posicao))
-                        posicao->pai->esq = posicao->dir;
-                    else
-                        posicao->pai->dir = posicao->dir;
-                }
-                free(posicao);
-                break;
-            }
-            // caso 2 filhos
-            int maiorValorEsq = maiorElemento(posicao->esq)->indice->codigo;
-            posicao->indice->codigo = maiorValorEsq;
-            removerRb(posicao->indice->codigo, &(posicao->esq));
-            break;
-        }
-        if (valor > posicao->indice->codigo)
-            posicao = posicao->dir;
-        else
-            posicao = posicao->esq;
-    }
-}
-
 void reajustar(Arvore *raiz, Arvore elemento)
 {
     // caso 1
@@ -574,27 +528,6 @@ void preOrder(Arvore raiz, Tabela *tab)
     }
 }
 
-// void imprimirElemento(Arvore raiz, Tabela * tab) {
-// 	Individuo * temp = (Individuo *) malloc (sizeof(Individuo));
-//     temp->codigo = 1000;
-//     printf("indice: %d\n", raiz->indice->indice);
-
-//    	fseek(tab->arquivoDados, raiz->indice->indice, SEEK_SET);
-// 	//
-// 	//int r = fread(temp, sizeof(Individuo), 1, tab->arquivoDados);
-//     fseek(tab->arquivoDados, 0L, SEEK_SET);
-//     char buffer[4096];
-//     size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
-//     buffer[bytesRead] = '\0';
-
-//     cJSON *listaJson = NULL;
-//     listaJson = cJSON_Parse(buffer);
-
-//     char *nome = ?;
-// 	printf("[%d, %s]\n", raiz->indice->codigo, nome);
-// 	free(temp);
-// }
-
 void imprimirElemento(Arvore raiz, Tabela *tab)
 {
     Individuo *temp = (Individuo *)malloc(sizeof(Individuo));
@@ -637,4 +570,65 @@ void imprimirElemento(Arvore raiz, Tabela *tab)
     }
 
     free(temp);
+}
+
+int busca(Tabela *tab, int codigo)
+{
+    Indice *indice = buscarIndice(tab->indices, codigo);
+
+    if (indice != NULL)
+    {
+        cJSON *listaJson = NULL;
+        char *jsonString = NULL;
+        fseek(tab->arquivoDados, 0L, SEEK_END);
+
+        if (ftell(tab->arquivoDados) == 0)
+        {
+            printf("Nenhum dado cadastrado para esse código.\n");
+        }
+        else
+        {
+            fseek(tab->arquivoDados, 0L, SEEK_SET);
+            char buffer[4096];
+            size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
+            buffer[bytesRead] = '\0';
+
+            listaJson = cJSON_Parse(buffer);
+
+            for (int i = 0; i < cJSON_GetArraySize(listaJson); i++)
+            {
+                cJSON *item = cJSON_GetArrayItem(listaJson, i);
+                if (cJSON_GetObjectItem(item, "codigo")->valueint == codigo)
+                {
+                    int codigoEncontrado = cJSON_GetObjectItem(item, "codigo")->valueint;
+                    const char *nomeEncontrado = cJSON_GetObjectItem(item, "nome")->valuestring;
+
+                    printf("Código: %d\n", codigoEncontrado);
+                    printf("Nome: %s\n", nomeEncontrado);
+                }
+            }
+        }
+        return 1;
+    }
+    else
+    {
+        printf("Código não encontrado.\n");
+        return 0;
+    }
+}
+
+Indice *buscarIndice(Arvore raiz, int codigo)
+{
+    Arvore posicao = raiz;
+    while (posicao != NULL)
+    {
+        if (codigo == posicao->indice->codigo)
+            return posicao->indice;
+
+        if (codigo > posicao->indice->codigo)
+            posicao = posicao->dir;
+        else
+            posicao = posicao->esq;
+    }
+    return NULL;
 }

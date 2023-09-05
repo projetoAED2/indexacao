@@ -73,4 +73,7 @@ int maiorVariavel(Indice *individuo, Arvore arvore, int cod);
 void preOrder(Arvore raiz, Tabela *tab);
 void imprimirElemento(Arvore raiz, Tabela *tab);
 
+int busca(Tabela *tab, int codigo);
+Indice *buscarIndice(Arvore raiz, int codigo);
+
 #endif
