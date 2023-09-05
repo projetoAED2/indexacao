@@ -12,7 +12,7 @@ int inicializarTabela(Tabela *tab)
 {
     inicializar(&tab->indices);
     tab->arquivoDados = fopen("dados.json", "a+b");
-    char nomeArq[] = "indices.dat";
+    char nomeArq[] = "index-codigo.json";
     tab->indices = carregarArquivo(nomeArq, tab->indices);
     if (tab->arquivoDados != NULL)
         return 1;
@@ -27,13 +27,61 @@ Arvore carregarArquivo(char *nome, Arvore a)
     Indice *temp;
     if (arq != NULL)
     {
-        temp = (Indice *)malloc(sizeof(Indice));
-        while (fread(temp, sizeof(Indice), 1, arq))
+        fseek(arq, 0L, SEEK_END);
+        long tamanho = ftell(arq);
+        fseek(arq, 0L, SEEK_SET);
+
+        char *jsonString = (char *)malloc(tamanho + 1);
+        if (!jsonString)
         {
-            printf("reading\n");
-            adicionar(temp, &a, 1);
-            temp = (Indice *)malloc(sizeof(Indice));
+            printf("Erro ao alocar memória para a string JSON.\n");
+            fclose(arq);
+            exit(-1);
         }
+
+        size_t bytesRead = fread(jsonString, 1, tamanho, arq);
+        jsonString[bytesRead] = '\0';
+
+        cJSON *listaJson = cJSON_Parse(jsonString);
+        free(jsonString);
+
+        if (!listaJson || !cJSON_IsArray(listaJson))
+        {
+            printf("Erro ao analisar o JSON.\n");
+            cJSON_Delete(listaJson);
+            exit(-1);
+        }
+
+        int numIndices = cJSON_GetArraySize(listaJson);
+        Indice *indices = (Indice *)malloc(numIndices * sizeof(Indice));
+
+        for (int i = 0; i < numIndices; i++)
+        {
+            cJSON *indiceJson = cJSON_GetArrayItem(listaJson, i);
+            cJSON *codigoJson = cJSON_GetObjectItem(indiceJson, "codigo");
+            cJSON *indiceValueJson = cJSON_GetObjectItem(indiceJson, "indice");
+
+            if (cJSON_IsNumber(codigoJson) && cJSON_IsNumber(indiceValueJson))
+            {
+                indices[i].codigo = codigoJson->valueint;
+                indices[i].indice = indiceValueJson->valueint;
+            }
+            else
+            {
+                printf("Erro ao ler os dados do índice %d.\n", i);
+            }
+        }
+
+        cJSON_Delete(listaJson);
+
+        for (int i = 0; i < numIndices; i++)
+        {
+            temp = (Indice *)malloc(sizeof(Indice));
+            temp->codigo = indices[i].codigo;
+            temp->indice = indices[i].indice;
+            adicionar(temp, &a, 1);
+        }
+
         fclose(arq);
     }
     return a;
