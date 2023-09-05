@@ -33,7 +33,8 @@ Comando para executar:
 ./programa
 ```
 
-# Executar testes
+# Executar testes 
+(obs: o arquivos dados.json, index-codigo.json e index-nome.json dever ter array vazio `[]`)
 
 Indexação de código:
 ```
@@ -41,7 +42,7 @@ Indexação de código:
 diff index-codigo.json teste-index-codigo-out.json
 ```
 
-Indexação de nome:
+Indexação de nome (não implementado ainda):
 ```
 ./programa < teste-index-nome.in 
 diff index-nome.json teste-index-nome-out.json

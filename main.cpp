@@ -4,35 +4,39 @@
 
 int main()
 {
-    Arvore indexCodigo, indexNome;
     Individuo *individuo;
+    Tabela tabela;
     int opcao, codigo;
+    char arqDados[] = "dados.json";
     char arqCodigo[] = "index-codigo.json";
     char arqNome[] = "index-nome.json";
     char nome[51];
-    inicializar(&indexCodigo);
-    inicializar(&indexNome);
+    inicializarTabela(&tabela);
 
     while (1)
     {
         scanf("%d", &opcao);
         switch (opcao)
         {
-            int valor;
         case 1:
-            individuo = lerDados();
-            adicionar(individuo, &indexCodigo, 1);
-            adicionar(individuo, &indexNome, 0);
+            adicionarIndividuo(&tabela, lerDados());
             break;
         case 2:
-            salvarArquivo(arqCodigo, indexCodigo);
-            salvarArquivo(arqNome, indexNome);
+            salvarArquivo(arqCodigo, tabela.indices);
             break;
         case 3:
-            scanf("%d\n", &codigo);
-            removerRb(codigo, &indexCodigo);
+            scanf("%d", &codigo);
+            busca(&tabela, codigo);
+            break;
+        case 4:
+            scanf("%d", &codigo);
+            removerRb(codigo, &tabela.indices);
+            removerDados(&tabela, codigo);
+            salvarArquivo(arqCodigo, tabela.indices);
+            inicializarTabela(&tabela);
             break;
         case 99:
+            salvarArquivo(arqCodigo, tabela.indices);
             exit(0);
         }
     }
