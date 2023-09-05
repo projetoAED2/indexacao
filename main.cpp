@@ -4,10 +4,10 @@
 
 int main()
 {
-    Arvore indexCodigo, indexNome;
     Individuo *individuo;
     Tabela tabela;
     int opcao, codigo;
+    char arqDados[] = "dados.json";
     char arqCodigo[] = "index-codigo.json";
     char arqNome[] = "index-nome.json";
     char nome[51];
@@ -28,13 +28,16 @@ int main()
             scanf("%d", &codigo);
             busca(&tabela, codigo);
             break;
+        case 4:
+            scanf("%d", &codigo);
+            removerRb(codigo, &tabela.indices);
+            removerDados(&tabela, codigo);
+            salvarArquivo(arqCodigo, tabela.indices);
+            inicializarTabela(&tabela);
+            break;
         case 99:
             salvarArquivo(arqCodigo, tabela.indices);
             exit(0);
         }
     }
 }
-
-
-
-

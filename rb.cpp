@@ -375,12 +375,6 @@ int isFilhoDireito(Arvore elemento)
 
 void salvarArquivo(char *nomeArquivo, Arvore arvore)
 {
-    if (arvore == NULL)
-    {
-        printf("A árvore está vazia ou não inicializada.\n");
-        return;
-    }
-
     FILE *arquivo = fopen(nomeArquivo, "w");
     if (arquivo)
     {
@@ -410,6 +404,100 @@ void salvarAux(Arvore raiz, cJSON *root)
 
         salvarAux(raiz->esq, root);
         salvarAux(raiz->dir, root);
+    }
+}
+
+void removerRb(int valor, Arvore *raiz)
+{
+    Arvore posicao;
+    posicao = *raiz;
+
+    while (posicao != NULL)
+    {
+        if (valor == posicao->indice->codigo)
+        {
+            // 0 filho
+            if (posicao->esq == NULL && posicao->dir == NULL)
+            {
+                // raiz 0 filho
+                if (isElementoRaiz(posicao))
+                {
+                    *raiz = NULL;
+                    free(posicao);
+                    break;
+                }
+                // vermelho 0 filho
+                if (posicao->cor == VERMELHO)
+                {
+                    if (isFilhoEsquerdo(posicao))
+                        posicao->pai->esq = NULL;
+                    else
+                        posicao->pai->dir = NULL;
+                    free(posicao);
+                    break;
+                }
+                // preto 0 filho
+                else
+                {
+                    noNull->cor = DUPLO_PRETO;
+                    noNull->pai = posicao->pai;
+                    if (isFilhoEsquerdo(posicao))
+                        posicao->pai->esq = noNull;
+                    else
+                        posicao->pai->dir = noNull;
+                    free(posicao);
+
+                    reajustar(raiz, noNull);
+                    break;
+                }
+                break;
+            }
+            // 1 filho esq
+            if (posicao->esq != NULL && posicao->dir == NULL)
+            {
+                posicao->esq->cor = PRETO;
+                posicao->esq->pai = posicao->pai;
+
+                if (isElementoRaiz(posicao))
+                    *raiz = posicao->esq;
+                else
+                {
+                    if (isFilhoDireito(posicao))
+                        posicao->pai->dir = posicao->esq;
+                    else
+                        posicao->pai->esq = posicao->esq;
+                }
+                free(posicao);
+                break;
+            }
+            // 1 filho dir
+            if (posicao->dir != NULL && posicao->esq == NULL)
+            {
+                posicao->dir->cor = PRETO;
+                posicao->dir->pai = posicao->pai;
+
+                if (isElementoRaiz(posicao))
+                    *raiz = posicao->dir;
+                else
+                {
+                    if (isFilhoEsquerdo(posicao))
+                        posicao->pai->esq = posicao->dir;
+                    else
+                        posicao->pai->dir = posicao->dir;
+                }
+                free(posicao);
+                break;
+            }
+            // caso 2 filhos
+            int maiorValorEsq = maiorElemento(posicao->esq)->indice->codigo;
+            posicao->indice->codigo = maiorValorEsq;
+            removerRb(posicao->indice->codigo, &(posicao->esq));
+            break;
+        }
+        if (valor > posicao->indice->codigo)
+            posicao = posicao->dir;
+        else
+            posicao = posicao->esq;
     }
 }
 
@@ -631,4 +719,58 @@ Indice *buscarIndice(Arvore raiz, int codigo)
             posicao = posicao->esq;
     }
     return NULL;
+}
+
+void removerDados(Tabela *tab, int codigo)
+{
+    if (tab->arquivoDados != NULL)
+    {
+        cJSON *listaJson = NULL;
+        char *jsonString = NULL;
+
+        fseek(tab->arquivoDados, 0L, SEEK_END);
+        // Verifique se o arquivo está vazio
+        if (ftell(tab->arquivoDados) == 0)
+        {
+            // O arquivo está vazio, crie uma nova lista JSON
+            listaJson = cJSON_CreateArray();
+        }
+        else
+        {
+            fseek(tab->arquivoDados, 0L, SEEK_SET);
+            char buffer[4096];
+            size_t bytesRead = fread(buffer, 1, sizeof(buffer), tab->arquivoDados);
+            buffer[bytesRead] = '\0';
+
+            listaJson = cJSON_Parse(buffer);
+        }
+
+        fclose(tab->arquivoDados);
+
+        int numElementos = cJSON_GetArraySize(listaJson);
+
+        for (int i = 0; i < numElementos; i++)
+        {
+            cJSON *elemento = cJSON_GetArrayItem(listaJson, i);
+            cJSON *codigoJson = cJSON_GetObjectItem(elemento, "codigo");
+
+            if (cJSON_IsNumber(codigoJson) && codigoJson->valueint == codigo)
+            {
+                cJSON_DeleteItemFromArray(listaJson, i);
+            }
+        }
+
+        tab->arquivoDados = fopen("dados.json", "w");
+
+        jsonString = cJSON_Print(listaJson);
+
+        fprintf(tab->arquivoDados, "%s", jsonString);
+        fflush(tab->arquivoDados);
+
+        free(jsonString);
+        cJSON_Delete(listaJson);
+
+        fclose(tab->arquivoDados);
+        tab->arquivoDados = fopen("dados.json", "a+b");
+    }
 }

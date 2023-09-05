@@ -76,4 +76,6 @@ void imprimirElemento(Arvore raiz, Tabela *tab);
 int busca(Tabela *tab, int codigo);
 Indice *buscarIndice(Arvore raiz, int codigo);
 
+void removerDados(Tabela *tabela, int codigo);
+
 #endif
