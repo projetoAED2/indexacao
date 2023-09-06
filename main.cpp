@@ -4,12 +4,10 @@
 
 int main()
 {
-    Individuo *individuo;
     Tabela tabela;
     int opcao, codigo;
     char arqDados[] = "dados.json";
     char arqCodigo[] = "index-codigo.json";
-    char arqNome[] = "index-nome.json";
     char nome[51];
     inicializarTabela(&tabela);
 
