@@ -14,7 +14,7 @@ enum Cor
 typedef struct individuo
 {
     int codigo;
-    char nome[51];
+    char *nome;
 } Individuo;
 
 typedef struct indice

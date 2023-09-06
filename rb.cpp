@@ -106,11 +106,19 @@ void limparBufferEntrada()
 
 Individuo *lerDados()
 {
-    Individuo *novo = (Individuo *)malloc(sizeof(Individuo));
+    Individuo *novo = (Individuo *)malloc(sizeof(Individuo));if (novo == NULL) {
+        return NULL;
+    }
     limparBufferEntrada(); // Limpa o buffer de entrada
     printf("Codigo: ");
     scanf("%d", &novo->codigo);
     limparBufferEntrada(); // Limpa o buffer de entrada novamente
+
+    novo->nome = (char *)malloc(50 * sizeof(char));
+    if (novo->nome == NULL) {
+        free(novo);
+        return NULL;
+    }
     printf("Nome: ");
     fgets(novo->nome, 50, stdin);
     tirarEnter(novo->nome);
@@ -127,6 +135,9 @@ void adicionarIndividuo(Tabela *tab, Individuo *individuo)
     if (tab->arquivoDados != NULL)
     {
         Indice *novo = (Indice *)malloc(sizeof(Indice));
+        if (novo == NULL) {
+            return;
+        }
         novo->codigo = individuo->codigo;
         cJSON *listaJson = NULL;
         char *jsonString = NULL;
@@ -155,7 +166,10 @@ void adicionarIndividuo(Tabela *tab, Individuo *individuo)
         tab->arquivoDados = fopen("dados.json", "w");
         cJSON *json = cJSON_CreateObject();
         cJSON_AddNumberToObject(json, "codigo", individuo->codigo);
-        cJSON_AddStringToObject(json, "nome", individuo->nome);
+
+        cJSON *nomeJson = cJSON_CreateString(individuo->nome);
+        cJSON_AddItemToObject(json, "nome", nomeJson);
+
         cJSON_AddItemToArray(listaJson, json);
         jsonString = cJSON_Print(listaJson);
 
