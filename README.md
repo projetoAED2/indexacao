@@ -2,7 +2,7 @@
 
 Atividade desenvolvida como pré-requisito para aprovação na disciplina de AED II.
 
-> Desenvolvido por: Yzabel Yale, Rochel Angelo e Vandielson Tenório.
+> Desenvolvido por: Izabel Nascimento, Rochel Angelo e Vandielson Tenório.
 
 # Indexação de individuos
 
